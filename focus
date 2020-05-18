@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+
+# Copyright 2020 Mike Iacovacci
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from lib.focuslib import VMwareFusionPro, VMwareFusionVirtualMachine
+from os import mkdir, path
+from re import search
+from subprocess import Popen, run
+from sys import argv
+from time import sleep
+
+
+def execute_command(VM, command):
+    """ SUMMARY:  executes one of sixteen possible task sequences against the supplied VM
+          INPUT:  1) target VM's VMwareFusionVirtualMachine object 2) number pad key pressed, command selector (str)
+         OUTPUT:  none """
+
+    if command == "0":
+        if not VM.pause():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+
+    elif command == ".":
+        if not VM.pause():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        if not VM.suspend():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+
+    elif command == "1":
+        run(["/usr/bin/say", "-v", "Tessa", "Executing program one"])
+        if not VM.run_program(program_path="/opt/focus.sh", program_arguments="the_first_arg the_2nd_arg"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+
+    elif command == "2":
+        run(["/usr/bin/say", "-v", "Tessa", "Executing program two"])
+        if not VM.run_program(program_path="c:\\Users\\User\\script.bat", program_arguments="payl0ad.run"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+
+    elif command == "3":
+        run(["/usr/bin/say", "-v", "Tessa", "Executing program three"])
+        if not VM.run_program(program_path="/usr/bin/open", program_arguments="-a Safari https://payl0ad.run"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+
+    elif command == "4":
+        if not VM.disconnect_device(device_name="ethernet0"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Network disconnected"])
+
+    elif command == "5":
+        if not VM.connect_device(device_name="ethernet0"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Network connected"])
+
+    elif command == "6":
+        run(["/usr/bin/say", "-v", "Tessa", "Intercepting network traffic"])
+        if not VM.capture_vmnet_packets(duration_seconds=15):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Interception complete"])
+
+    elif command == "7":
+        run(["/usr/bin/say", "-v", "Tessa", "Restoring execution state"])
+        if not VM.revert_to_snapshot(snapshot_name=VM.last_focus_snapshot):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        sleep(2)
+        if not VM.start():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Execution resuming"])
+
+    elif command == "8":
+        new_prefix = str(VM.snapshot_name_prefix + str(VM.snapshot_name_suffix()))
+        snapshot = str(new_prefix + "-cloned")
+        clone = str(new_prefix + "-LINKED-CLONE")
+        output_folder = str(VM.VM_storage_root_path + clone + ".vmwarevm")
+        new_VMX = str(output_folder + "/" + clone + ".vmx")
+        run(["/usr/bin/say", "-v", "Tessa", "Cloning in progress"])
+        mkdir(output_folder)
+        if not VM.stop_soft():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        if not VM.snapshot(snapshot_name=snapshot):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        if not VM.create_linked_clone(snapshot_name=snapshot, destination_path=new_VMX, clone_name=clone):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        new_VM = VMwareFusionVirtualMachine(VMX_file_path=new_VMX, running=False)
+        if not new_VM.start():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Cloning complete"])
+
+    elif command == "9":
+        run(["/usr/bin/say", "-v", "Tessa", "Memory acquisition in progress"])
+        if not VM.acquire_memory_sample():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Memory sample acquired"])
+
+    elif command == "/":
+        if path.exists(VM.VMX_file_path):
+            Popen(["/usr/bin/open", "-R", str(VM.VMX_file_path)])
+
+    elif command == "asterisk":
+        if path.exists(VM.primary_writeable_shared_folder):
+            Popen(["/usr/bin/open", str(VM.primary_writeable_shared_folder)])
+
+    elif command == "-":
+        if path.exists(VM.primary_readonly_shared_folder):
+            Popen(["/usr/bin/open", str(VM.primary_readonly_shared_folder)])
+
+    elif command == "+":
+        run(["/usr/bin/say", "-v", "Tessa", "Preserving execution state"])
+        if not VM.snapshot():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Execution state preserved"])
+
+    elif command == "up":
+        run(["/usr/bin/say", "-v", "Tessa", "Updating operating system"])
+        if not VM.revert_to_snapshot(snapshot_name="focus-RESTORE"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        sleep(2)
+        if not VM.start():
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        if not VM.delete_snapshot(snapshot_name="focus-RESTORE"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        sleep(2)
+
+        # For this to work, the user must have privileges to run /usr/bin/apt as root using sudo without a password
+        # This setting must be configured at the point in time when the "focus-RESTORE" snapshot was originally created
+
+        if not VM.run_program(program_path="/bin/bash -c",
+                              program_arguments=str("\"sudo apt update -y && " +
+                                                    "DEBIAN_FRONTEND=noninteractive sudo apt upgrade -y\"")):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+            return
+        if not VM.snapshot(snapshot_name="focus-RESTORE"):
+            Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        Popen(["/usr/bin/say", "-v", "Tessa", "Operating system update complete"])
+
+    else:
+        Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+
+
+def get_target_VMX(target_VM_name, running_VMX_list):
+    """ SUMMARY:  transforms the target VM's display name into the corresponding running .vmx file
+          INPUT:  1) target VM's display name 2) a listing of currently-running VM .vmx file paths (list)
+         OUTPUT:  the full path to the matching VM's .vmx file (str) """
+
+    vmx_filename = str(target_VM_name + ".vmx$")
+
+    for VM in running_VMX_list:
+        if search(vmx_filename, VM):
+            return VM
+
+    return False
+
+
+def main():
+
+    target_VM_name = str(argv[1])
+    user_command = str(argv[2])
+
+    fusion = VMwareFusionPro(full_initialization=False)
+
+    target = get_target_VMX(target_VM_name, fusion.running_VMX_list)
+
+    if target and isinstance(target, str):
+        VM = VMwareFusionVirtualMachine(VMX_file_path=target, running=True)
+    else:
+        VM = False
+        Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        exit(1)
+
+    if VM and isinstance(VM, VMwareFusionVirtualMachine):
+        execute_command(VM, user_command)
+    else:
+        Popen(["/usr/bin/say", "-v", "Tessa", "Error!"])
+        exit(1)
+
+
+if __name__ == '__main__':
+    main()
